@@ -77,6 +77,47 @@ def test_extract_text_by_mime_type_routes_registered_extractor() -> None:
     assert extracted == "# comment\nfoo: bar"
 
 
+@pytest.mark.parametrize(
+    ("extract", "route_kwargs"),
+    [
+        (
+            document_extractor_node._extract_text_by_file_extension,
+            {"file_extension": ".odt"},
+        ),
+        (
+            document_extractor_node._extract_text_by_mime_type,
+            {"mime_type": "application/vnd.oasis.opendocument.text"},
+        ),
+    ],
+)
+def test_opendocument_text_routes_to_unstructured_extractor(
+    monkeypatch: pytest.MonkeyPatch,
+    extract: Any,
+    route_kwargs: dict[str, str],
+) -> None:
+    def extract_odt(
+        _file_content: bytes, *, unstructured_api_config: UnstructuredApiConfig
+    ) -> str:
+        _ = unstructured_api_config
+        return "OpenDocument text"
+
+    monkeypatch.setattr(document_extractor_node, "_extract_text_from_odt", extract_odt)
+    monkeypatch.setattr(
+        document_extractor_node,
+        "_TEXT_EXTRACTOR_REGISTRY",
+        document_extractor_node._build_text_extractor_registry(),
+    )
+
+    assert (
+        extract(
+            file_content=b"odt",
+            unstructured_api_config=UnstructuredApiConfig(),
+            **route_kwargs,
+        )
+        == "OpenDocument text"
+    )
+
+
 def test_extract_text_from_file_prefers_extension_over_mime_type(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -383,6 +424,7 @@ def test_partition_unstructured_file_uses_api_partition(
         (document_extractor_node._extract_text_from_ppt, "PPT"),
         (document_extractor_node._extract_text_from_pptx, "PPTX"),
         (document_extractor_node._extract_text_from_epub, "EPUB"),
+        (document_extractor_node._extract_text_from_odt, "ODT"),
     ],
 )
 def test_unstructured_extractors_convert_partition_errors(

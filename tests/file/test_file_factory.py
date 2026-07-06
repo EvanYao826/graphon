@@ -10,8 +10,37 @@ def test_standardize_file_type_recognizes_document_extension() -> None:
     assert standardize_file_type(extension=".txt") == FileType.DOCUMENT
 
 
+def test_standardize_file_type_recognizes_opendocument_extension() -> None:
+    assert standardize_file_type(extension=".odt") == FileType.DOCUMENT
+
+
 def test_standardize_file_type_falls_back_to_mime_type() -> None:
     assert standardize_file_type(mime_type="video/mp4") == FileType.VIDEO
+
+
+def test_get_file_type_by_mime_type_recognizes_document_office_mime_types() -> None:
+    assert (
+        get_file_type_by_mime_type("application/vnd.oasis.opendocument.text")
+        == FileType.DOCUMENT
+    )
+    assert get_file_type_by_mime_type("application/wps-office.wps") == FileType.DOCUMENT
+
+
+def test_get_file_type_by_mime_type_ignores_parameters() -> None:
+    assert (
+        get_file_type_by_mime_type("application/pdf; charset=binary")
+        == FileType.DOCUMENT
+    )
+    assert (
+        get_file_type_by_mime_type(
+            "application/vnd.oasis.opendocument.text; charset=utf-8",
+        )
+        == FileType.DOCUMENT
+    )
+
+
+def test_get_file_type_by_mime_type_requires_top_level_media_type() -> None:
+    assert get_file_type_by_mime_type("application/image-metadata") == FileType.CUSTOM
 
 
 def test_get_file_type_by_mime_type_returns_custom_for_unknown_type() -> None:
