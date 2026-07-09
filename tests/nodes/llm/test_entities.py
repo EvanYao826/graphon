@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from graphon.entities.base_node_data import BaseNodeData, RetryConfig
 from graphon.nodes.llm.entities import LLMInvocationConfig, LLMNodeData
@@ -19,13 +20,17 @@ def test_first_token_timeout_seconds_converts_milliseconds() -> None:
     ).first_token_timeout_seconds == pytest.approx(5.0)
 
 
-def test_first_token_timeout_seconds_is_none_when_not_positive() -> None:
+def test_first_token_timeout_seconds_is_none_when_disabled() -> None:
     assert (
         LLMInvocationConfig(first_token_timeout=0).first_token_timeout_seconds is None
     )
-    assert (
-        LLMInvocationConfig(first_token_timeout=-1).first_token_timeout_seconds is None
-    )
+
+
+def test_first_token_timeout_rejects_negative() -> None:
+    # A negative is a typo, not an intentional disable (0 is the disable sentinel);
+    # reject it at config time instead of silently degrading to "no timeout".
+    with pytest.raises(ValidationError):
+        LLMInvocationConfig(first_token_timeout=-1)
 
 
 def test_llm_family_nodes_carry_invocation_config() -> None:

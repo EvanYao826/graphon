@@ -29,7 +29,8 @@ class LLMInvocationConfig(BaseModel):
     carries the values — enforcement is the host transport adapter's job.
     """
 
-    first_token_timeout: int = 0  # first token timeout in milliseconds; 0 disables
+    # First token timeout in milliseconds; 0 disables. Negatives are rejected.
+    first_token_timeout: int = Field(default=0, ge=0)
 
     @property
     def first_token_timeout_seconds(self) -> float | None:
